@@ -13,3 +13,6 @@ ENV/
 *.swo
 *~
 
+# Source repository (cloned locally)
+day21/
+
