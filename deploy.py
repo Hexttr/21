@@ -14,7 +14,7 @@ from pathlib import Path
 SERVER_IP = "195.133.63.34"
 SERVER_USER = "root"
 SERVER_PASSWORD = "hdp-k.PD6u8K7U"
-DOMAIN = "21days.club"
+DOMAIN = "21day.club"
 SOURCE_REPO = "https://github.com/luckyit-test/day21.git"
 
 def execute_command(ssh, command, check=True):
