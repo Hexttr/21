@@ -78,10 +78,10 @@ router.get('/all', requireAdmin, async (req, res) => {
 
     // Combine data
     const codeMap = new Map();
-    codesResult.rows.forEach((c: any) => codeMap.set(c.id, c.comment));
+    codesResult.rows.forEach((c) => codeMap.set(c.id, c.comment));
 
     const progressMap = new Map();
-    progressResult.rows.forEach((p: any) => {
+    progressResult.rows.forEach((p) => {
       if (!progressMap.has(p.user_id)) {
         progressMap.set(p.user_id, []);
       }
@@ -89,14 +89,14 @@ router.get('/all', requireAdmin, async (req, res) => {
     });
 
     const rolesMap = new Map();
-    rolesResult.rows.forEach((r: any) => {
+    rolesResult.rows.forEach((r) => {
       if (!rolesMap.has(r.user_id)) {
         rolesMap.set(r.user_id, []);
       }
       rolesMap.get(r.user_id).push(r.role);
     });
 
-    const users = profilesResult.rows.map((profile: any) => {
+    const users = profilesResult.rows.map((profile) => {
       const userProgress = progressMap.get(profile.user_id) || [];
       const roles = rolesMap.get(profile.user_id) || [];
       
@@ -106,8 +106,8 @@ router.get('/all', requireAdmin, async (req, res) => {
         name: profile.name,
         is_blocked: profile.blocked || false,
         invitation_code_comment: profile.invitation_code_id ? codeMap.get(profile.invitation_code_id) : null,
-        completed_lessons: userProgress.filter((p: any) => p.completed).length,
-        quiz_completed: userProgress.filter((p: any) => p.quiz_completed).length,
+        completed_lessons: userProgress.filter((p) => p.completed).length,
+        quiz_completed: userProgress.filter((p) => p.quiz_completed).length,
         roles: roles,
       };
     });
@@ -125,8 +125,8 @@ router.patch('/:userId/profile', requireAdmin, async (req, res) => {
     const { userId } = req.params;
     const { name, blocked } = req.body;
 
-    const updates: string[] = [];
-    const values: any[] = [];
+    const updates = [];
+    const values = [];
     let paramIndex = 1;
 
     if (name !== undefined) {
