@@ -7,14 +7,21 @@ const router = express.Router();
 // All routes require authentication
 router.use(authenticate);
 
-// Initialize OpenAI (you'll need to set OPENAI_API_KEY in environment)
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI (optional - only if API key is provided)
+let openai = null;
+if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your-openai-api-key') {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 // AI Chat
 router.post('/chat', async (req, res) => {
   try {
+    if (!openai) {
+      return res.status(503).json({ error: 'OpenAI API key not configured' });
+    }
+
     const { message, context } = req.body;
 
     if (!message) {
@@ -43,6 +50,10 @@ router.post('/chat', async (req, res) => {
 // AI Quiz
 router.post('/quiz', async (req, res) => {
   try {
+    if (!openai) {
+      return res.status(503).json({ error: 'OpenAI API key not configured' });
+    }
+
     const { topic, difficulty } = req.body;
 
     if (!topic) {
@@ -76,6 +87,10 @@ router.post('/quiz', async (req, res) => {
 // AI Image Generation
 router.post('/image', async (req, res) => {
   try {
+    if (!openai) {
+      return res.status(503).json({ error: 'OpenAI API key not configured' });
+    }
+
     const { prompt } = req.body;
 
     if (!prompt) {
