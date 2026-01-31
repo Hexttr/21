@@ -12,6 +12,7 @@ const __dirname = path.dirname(__filename);
 const certPath = path.join(os.homedir(), '.cloud-certs', 'root.crt');
 
 // Database connection configuration
+// Using existing PostgreSQL database on Timeweb
 const dbConfig = {
   host: process.env.DB_HOST || '9558e7dd68bdade50224f6f1.twc1.net',
   port: parseInt(process.env.DB_PORT || '5432'),
@@ -20,7 +21,7 @@ const dbConfig = {
   password: process.env.DB_PASSWORD || 'kQIXN6%3B%7DFrB3ZA',
   ssl: {
     rejectUnauthorized: true,
-    ca: fs.readFileSync(certPath).toString(),
+    ca: fs.existsSync(certPath) ? fs.readFileSync(certPath).toString() : undefined,
   },
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000,
@@ -32,7 +33,7 @@ const pool = new Pool(dbConfig);
 
 // Test connection
 pool.on('connect', () => {
-  console.log('[DB] Connected to PostgreSQL');
+  console.log('[DB] Connected to PostgreSQL (Timeweb)');
 });
 
 pool.on('error', (err) => {
