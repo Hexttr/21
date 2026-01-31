@@ -6,6 +6,7 @@ import usersRoutes from './routes/users.js';
 import lessonsRoutes from './routes/lessons.js';
 import progressRoutes from './routes/progress.js';
 import aiRoutes from './routes/ai.js';
+import adminRoutes from './routes/admin.js';
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/lessons', lessonsRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Error handling
 app.use((err, req, res, next) => {
