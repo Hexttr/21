@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
 import lessonsRoutes from './routes/lessons.js';
+import progressRoutes from './routes/progress.js';
 import aiRoutes from './routes/ai.js';
 
 dotenv.config();
@@ -28,6 +29,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/lessons', lessonsRoutes);
+app.use('/api/progress', progressRoutes);
 app.use('/api/ai', aiRoutes);
 
 // Error handling

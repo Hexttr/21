@@ -24,14 +24,23 @@ router.post('/signin', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Get user from database
-    // Note: Assuming auth.users table exists (from Supabase migrations)
-    const userResult = await query(
-      `SELECT id, email, encrypted_password, email_confirmed_at 
-       FROM auth.users 
-       WHERE email = $1`,
-      [email.toLowerCase()]
-    );
+    // Get user from database using SECURITY DEFINER function or direct query
+    // Try using function first, fallback to direct query
+    let userResult;
+    try {
+      userResult = await query(
+        `SELECT * FROM api.get_user_by_email($1)`,
+        [email.toLowerCase()]
+      );
+    } catch (e) {
+      // Fallback: direct query (may need RLS bypass)
+      userResult = await query(
+        `SELECT id, email, encrypted_password, email_confirmed_at 
+         FROM auth.users 
+         WHERE email = $1`,
+        [email.toLowerCase()]
+      );
+    }
 
     if (userResult.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid email or password' });
@@ -39,11 +48,20 @@ router.post('/signin', async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // Check if user is blocked
-    const blockedResult = await query(
-      `SELECT blocked FROM public.user_profiles WHERE user_id = $1`,
-      [user.id]
-    );
+    // Check if user is blocked using function or direct query
+    let blockedResult;
+    try {
+      blockedResult = await query(
+        `SELECT blocked FROM api.get_user_profile($1)`,
+        [user.id]
+      );
+    } catch (e) {
+      // Fallback: direct query
+      blockedResult = await query(
+        `SELECT blocked FROM public.profiles WHERE user_id = $1`,
+        [user.id]
+      );
+    }
 
     if (blockedResult.rows.length > 0 && blockedResult.rows[0].blocked) {
       return res.status(403).json({ error: 'Account is blocked' });
@@ -57,12 +75,22 @@ router.post('/signin', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Check admin role
-    const roleResult = await query(
-      `SELECT role FROM public.user_roles WHERE user_id = $1 AND role = 'admin'`,
-      [user.id]
-    );
-    const isAdmin = roleResult.rows.length > 0;
+    // Check admin role using function or direct query
+    let isAdmin = false;
+    try {
+      const roleResult = await query(
+        `SELECT api.user_has_role($1, 'admin') as is_admin`,
+        [user.id]
+      );
+      isAdmin = roleResult.rows[0]?.is_admin || false;
+    } catch (e) {
+      // Fallback: direct query
+      const roleResult = await query(
+        `SELECT role FROM public.user_roles WHERE user_id = $1 AND role = 'admin'`,
+        [user.id]
+      );
+      isAdmin = roleResult.rows.length > 0;
+    }
 
     // Generate token
     const token = generateToken(user.id, user.email);
@@ -91,10 +119,18 @@ router.post('/signup', async (req, res) => {
     }
 
     // Validate invitation code
-    const codeResult = await query(
-      `SELECT id, used FROM public.invitation_codes WHERE code = $1`,
-      [invitationCode]
-    );
+    // Note: invitation_codes table might not exist, check structure first
+    let codeResult;
+    try {
+      codeResult = await query(
+        `SELECT id, used FROM public.invitation_codes WHERE code = $1`,
+        [invitationCode]
+      );
+    } catch (e) {
+      // If table doesn't exist, create a simple validation
+      // For now, return error - you may need to create this table
+      return res.status(400).json({ error: 'Invitation code validation not available' });
+    }
 
     if (codeResult.rows.length === 0) {
       return res.status(400).json({ error: 'Invalid invitation code' });
@@ -133,12 +169,12 @@ router.post('/signup', async (req, res) => {
       [user.id, invitationCode]
     );
 
-    // Create user profile
+    // Create user profile (using profiles table structure)
     await query(
-      `INSERT INTO public.user_profiles (user_id, name, created_at)
-       VALUES ($1, $2, NOW())
-       ON CONFLICT (user_id) DO NOTHING`,
-      [user.id, name]
+      `INSERT INTO public.profiles (user_id, name, email, created_at, updated_at)
+       VALUES ($1, $2, $3, NOW(), NOW())
+       ON CONFLICT (user_id) DO UPDATE SET name = $2, email = $3, updated_at = NOW()`,
+      [user.id, name, email.toLowerCase()]
     );
 
     // Create user role (default: student)
